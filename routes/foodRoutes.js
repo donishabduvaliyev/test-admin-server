@@ -147,7 +147,7 @@ router.put("/:foodId", upload.single("image"), async (req, res) => {
     if (typeof req.body.isAviable !== "undefined") {
       foodItem.isAviable = req.body.isAviable;
     }
-    
+
     // foodItem.toppings = req.body.toppings ? JSON.parse(req.body.toppings) : foodItem.toppings;
     if (req.body.toppings) {
       try {
@@ -229,8 +229,10 @@ router.post(
 
       if (!admin) return res.status(401).json({ message: "Invalid Credentials" });
 
-      const isMatch = await bcrypt.compare(password, admin.password);
-      if (!isMatch) return res.status(401).json({ message: "Invalid Credentials" });
+      if (admin.password !== password) {
+        return res.status(401).json({ message: "Invalid Credentials" });
+      }
+
 
       const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || "default_secret", { expiresIn: "1h" });
       res.json({ token });
@@ -314,7 +316,7 @@ router.post("/send-broadcast", async (req, res) => {
   try {
     const { title, message, imageUrl } = req.body;
 
-    if (!title || !message ) {
+    if (!title || !message) {
       return res.status(400).json({ message: "❌ Title, message, and image URL are required!" });
     }
 
