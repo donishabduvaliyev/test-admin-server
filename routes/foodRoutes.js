@@ -225,9 +225,9 @@ router.post(
     const { username, password } = req.body;
     try {
       const admin = await Admin.findOne({ username });
-      console.log(admin);
-      console.log(password);
-      console.log(admin.password);
+      console.log("admin db", admin);
+      console.log("front end", password);
+      console.log("db pasword",admin.password);
       
       
 
