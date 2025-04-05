@@ -33,8 +33,9 @@ app.use(express.urlencoded({ extended: true }));
 // const cors = require("cors");
 
 app.use(cors({
-  origin: "https://test-bot-admin.netlify.app", // <- your frontend domain
-  credentials: true
+  origin: "https://test-bot-admin.netlify.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
 }));
 
 
