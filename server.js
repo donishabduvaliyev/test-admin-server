@@ -38,6 +38,8 @@ app.use(cors({
   credentials: true,
 }));
 
+app.options("*", cors());
+
 
 // ✅ Connect to MongoDB only ONCE
 mongoose
