@@ -9,6 +9,7 @@ import { body, validationResult } from "express-validator";
 import Admin from "../modal/admin.js";
 import ScheduleModel from "../modal/botModal.js";
 import axios from "axios";
+import { verifyToken } from "../middleware/auth.js";
 
 const TELEGRAM_BACKEND_URL = process.env.TELEGRAM_BACKEND_URL; // Replace with your bot backend URL
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -31,7 +32,7 @@ checkAdmin();
  * @route GET /api/food
  * @desc Get all food items
  */
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     const foods = await Food.find();
     res.json({
@@ -227,9 +228,9 @@ router.post(
       const admin = await Admin.findOne({ username });
       console.log("admin db", admin);
       console.log("front end", password);
-      console.log("db pasword",admin.password);
-      
-      
+      console.log("db pasword", admin.password);
+
+
 
       if (!admin) return res.status(401).json({ message: "Invalid Credentials" });
 
@@ -240,6 +241,8 @@ router.post(
 
       const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || "default_secret", { expiresIn: "1h" });
       res.json({ token });
+      console.log("succesfully logged in");
+      
     } catch (error) {
       res.status(500).json({ message: "Server Error", error: error.message });
     }
