@@ -23,11 +23,11 @@ const upload = multer({
 const JWT_SECRET = process.env.JWT_SECRET;
 
 
-async function checkAdmin() {
-  const admin = await Admin.findOne({ username: "admin" });
-  console.log(admin);
-}
-checkAdmin();
+// async function checkAdmin() {
+//   const admin = await Admin.findOne({ username: "admin" });
+//   console.log(admin);
+// }
+// checkAdmin();
 /**
  * @route GET /api/food
  * @desc Get all food items
