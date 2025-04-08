@@ -12,44 +12,26 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   "http://localhost:5174",
   "http://localhost:5173",
-  " https://test-bot-admin.netlify.app ",
+  "https://test-bot-admin.netlify.app", // Removed spaces around the URL
   "https://web.telegram.org",
-  "https://localhost:5000"
+  "http://localhost:5000" // Changed to http (typical for localhost)
 ];
 
-// app.use(cors({
-//   origin: function (origin, callback) {
-//     if (!origin || allowedOrigins.includes(origin) ) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   methods: "GET,POST",
-//   allowedHeaders: "Content-Type",
-//   credentials: true
-// }));
-
-// const cors = require("cors");
-
-
-
 app.use(cors({
-  // origin: "https://test-bot-admin.netlify.app",
-
   origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin) ) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      },
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `CORS policy blocks this origin: ${origin}`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
+  allowedHeaders: "Content-Type, Authorization",
+  credentials: true
 }));
-
-// app.options("*", cors());
-
 
 // ✅ Connect to MongoDB only ONCE
 mongoose
@@ -60,7 +42,7 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-mongoose.set("debug", true); // Enable query debugging
+mongoose.set("debug", true);
 
 app.get("/", (req, res) => {
   res.send("✅ Server is running!");
