@@ -32,7 +32,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
  * @route GET /api/food
  * @desc Get all food items
  */
-router.get("/", verifyToken, async (req, res) => {
+router.get("/",  async (req, res) => {
   try {
     const foods = await Food.find();
     res.json({
@@ -216,70 +216,70 @@ router.post("/upload", upload.single("image"), async (req, res) => {
 });
 
 
-router.post(
-  "/login",
-  [body("username").notEmpty(), body("password").notEmpty()],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+// router.post(
+//   "/login",
+//   [body("username").notEmpty(), body("password").notEmpty()],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { username, password } = req.body;
-    try {
-      const admin = await Admin.findOne({ username });
-      console.log("admin db", admin);
-      console.log("front end", password);
-      console.log("db pasword", admin.password);
-
-
-
-      if (!admin) return res.status(401).json({ message: "Invalid Credentials" });
-
-      if (admin.password !== password) {
-        return res.status(401).json({ message: "Invalid Credentials" });
-      }
+//     const { username, password } = req.body;
+//     try {
+//       const admin = await Admin.findOne({ username });
+//       console.log("admin db", admin);
+//       console.log("front end", password);
+//       console.log("db pasword", admin.password);
 
 
-      const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-      res.json({ token });
-      console.log("succesfully logged in");
+
+//       if (!admin) return res.status(401).json({ message: "Invalid Credentials" });
+
+//       if (admin.password !== password) {
+//         return res.status(401).json({ message: "Invalid Credentials" });
+//       }
+
+
+//       const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+//       res.json({ token });
+//       console.log("succesfully logged in");
       
-    } catch (error) {
-      res.status(500).json({ message: "Server Error", error: error.message });
-    }
-  }
-);
+//     } catch (error) {
+//       res.status(500).json({ message: "Server Error", error: error.message });
+//     }
+//   }
+// );
 
 
 // Protect Routes Middleware
 
 
 // ✅ Update Admin Credentials (Username or Password)
-router.put("/updateAdmin", async (req, res) => {
-  try {
-    if (!req.admin || !req.admin.id) {
-      return res.status(401).json({ message: "Unauthorized request" });
-    }
-    const adminId = req.admin.id;
-    const { username, password } = req.body;
+// router.put("/updateAdmin", async (req, res) => {
+//   try {
+//     if (!req.admin || !req.admin.id) {
+//       return res.status(401).json({ message: "Unauthorized request" });
+//     }
+//     const adminId = req.admin.id;
+//     const { username, password } = req.body;
 
-    let admin = await Admin.findById(adminId);
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
+//     let admin = await Admin.findById(adminId);
+//     if (!admin) return res.status(404).json({ message: "Admin not found" });
 
-    if (username) {
-      admin.username = username;
-    }
+//     if (username) {
+//       admin.username = username;
+//     }
 
-    if (password) {
-      const salt = await bcrypt.genSalt(10);
-      admin.password = await bcrypt.hash(password, salt);
-    }
+//     if (password) {
+//       const salt = await bcrypt.genSalt(10);
+//       admin.password = await bcrypt.hash(password, salt);
+//     }
 
-    await admin.save();
-    res.json({ message: "Credentials updated successfully!" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-});
+//     await admin.save();
+//     res.json({ message: "Credentials updated successfully!" });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// });
 
 // GEt Bot shudle
 router.get("/bot-schedule", async (req, res) => {
