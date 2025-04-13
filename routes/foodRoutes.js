@@ -3,13 +3,13 @@ import Food from "../modal/modal.js";
 import multer from "multer";
 import cloudinary from "../cloudinaryconfig.js";
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { body, validationResult } from "express-validator";
-import Admin from "../modal/admin.js";
+// import bcrypt from "bcryptjs";
+// import jwt from "jsonwebtoken";
+// import { body, validationResult } from "express-validator";
+// import Admin from "../modal/admin.js";
 import ScheduleModel from "../modal/botModal.js";
 import axios from "axios";
-import { verifyToken } from "../middleware/auth.js";
+// import { verifyToken } from "../middleware/auth.js";
 
 const TELEGRAM_BACKEND_URL = process.env.TELEGRAM_BACKEND_URL; // Replace with your bot backend URL
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -37,7 +37,6 @@ router.get("/",  async (req, res) => {
     const foods = await Food.find();
     res.json({
       message: "Welcome to Admin Dashboard",
-      admin: req.admin,
       foods, // Send food data inside the same response
     });
 
