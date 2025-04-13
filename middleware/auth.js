@@ -9,10 +9,12 @@ export const verifyToken = (req, res, next) => {
   }
 
   try {
+    console.log("JWT_SECRET:", process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "default_secret");
     req.admin = decoded; // Save admin info in request
     next();
   } catch (error) {
+    console.error("JWT Verification Error:", error.message);
     return res.status(401).json({ message: "Invalid or expired token." });
   }
 };
