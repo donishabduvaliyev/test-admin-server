@@ -30,7 +30,7 @@ app.use(cors({
   },
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: "Content-Type, ",
-  credentials: true
+  // credentials: true
 }));
 
 // ✅ Connect to MongoDB only ONCE
