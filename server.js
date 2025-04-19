@@ -29,8 +29,8 @@ app.use(cors({
     return callback(null, true);
   },
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: "Content-Type, ",
-  // credentials: true
+  allowedHeaders: "Content-Type",
+  credentials: false
 }));
 
 // ✅ Connect to MongoDB only ONCE
