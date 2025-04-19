@@ -32,19 +32,29 @@ const JWT_SECRET = process.env.JWT_SECRET;
  * @route GET /api/food
  * @desc Get all food items
  */
-router.get("/",  async (req, res) => {
-  try {
-    const foods = await Food.find();
-    res.json({
-      message: "Welcome to Admin Dashboard",
-      foods, // Send food data inside the same response
-    });
+// router.get("/",  async (req, res) => {
+//   try {
+//     const foods = await Food.find();
+//     res.json({
+//       message: "Welcome to Admin Dashboard",
+//       foods, // Send food data inside the same response
+//     });
 
+//   } catch (error) {
+//     res.status(500).json({ message: "❌ Server Error", error: error.message });
+//   }
+// });
+
+
+router.get("/", async (req, res) => {
+  try {
+    const foods = await Food.find({});
+    res.status(200).json(foods); // Just return the array directly if frontend expects it
   } catch (error) {
+    console.error("Error fetching food:", error);
     res.status(500).json({ message: "❌ Server Error", error: error.message });
   }
 });
-
 
 
 
