@@ -3,8 +3,8 @@
 
 import { Router } from "express";
 const router = Router();
-import Order from "../modal/orderData"; // Use the updated Order model
-import { findOneAndUpdate, findOne } from "../modal/dashboardData"; // Use the new analytics model
+import Order from "../modal/orderData.js"; // Use the updated Order model
+import DashboardAnalytics from "../modal/dashboardData.js"; // Use the new analytics model
 
 // Define the timezone for date calculations (consistent with your restaurant's location)
 const TIMEZONE = "Asia/Tashkent";
@@ -251,7 +251,7 @@ async function updateDashboardAnalyticsDocument() {
     }
 
     try {
-        const updatedDoc = await findOneAndUpdate(
+        const updatedDoc = await DashboardAnalytics.findOneAndUpdate(
             { identifier: 'main_dashboard' }, // Find the document by its unique identifier
             { $set: calculatedData }, // Set the fields to the newly calculated data
             {
@@ -297,7 +297,7 @@ router.post("/updateAnalytics", async (req, res, next) => {
 router.get("/dashboardAnalytics", async (req, res, next) => {
     try {
         // Find the single document using the fixed identifier
-        const analytics = await findOne({ identifier: 'main_dashboard' });
+        const analytics = await DashboardAnalytics.findOne({ identifier: 'main_dashboard' });
 
         if (!analytics) {
             // If not found, it might not have been created/updated yet
