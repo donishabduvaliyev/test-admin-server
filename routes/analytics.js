@@ -3,7 +3,7 @@
 
 import { Router } from "express";
 const router = Router();
-import { aggregate } from "../modal/orderData"; // Use the updated Order model
+import Order from "../modal/orderData"; // Use the updated Order model
 import { findOneAndUpdate, findOne } from "../modal/dashboardData"; // Use the new analytics model
 
 // Define the timezone for date calculations (consistent with your restaurant's location)
@@ -37,7 +37,7 @@ async function calculateGlobalAnalytics() {
         const yearEnd = new Date(Date.UTC(now.getUTCFullYear(), 11, 31, 23, 59, 59, 999));
 
         // --- Aggregation Pipeline using $facet ---
-        const results = await aggregate([
+        const results = await Order.aggregate([
             { // No initial $match needed, aggregate across all orders
                 $facet: {
                     // --- Today's Data ---
