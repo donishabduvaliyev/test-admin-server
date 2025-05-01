@@ -112,7 +112,7 @@ const ADMIN_API_KEY = process.env.ADMIN_SERVER_API_KEY; // API key to authentica
 
 
 
-router.put('/:orderId/status', requireApiKey, async (req, res, next) => {
+router.put('/:orderId/status', async (req, res, next) => {
     const { orderId } = req.params;
     const { status } = req.body; // e.g., 'accepted', 'denied', 'ready', 'completed'
 
@@ -223,7 +223,7 @@ async function notifyCustomerViaBot(chatId, message) {
     }
 }
 
-router.put('/:orderId/review', requireApiKey, async (req, res, next) => {
+router.put('/:orderId/review',async (req, res, next) => {
     const { orderId } = req.params;
     const { rating } = req.body; // Get rating from request body
 
