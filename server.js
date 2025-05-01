@@ -70,7 +70,8 @@ app.get("/", (req, res) => {
 // --- Application Routes ---
 app.use("/api/food", foodRoutes); // Mount food-related routes
 app.use('/api/analytics', analyticsRoutes);
-app.use("/api/recieve-order" , recieveOrder) // Mount analytics routes
+// app.use("/api/recieve-order" , recieveOrder)
+app.use("/api/receive-order" , recieveOrder) // Mount analytics routes
 
 // --- Scheduled Cron Job for Analytics ---
 console.log(`Scheduling daily analytics update for timezone: ${TIMEZONE}`);
