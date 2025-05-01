@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import cron from "node-cron";
 // Ensure this path is correct relative to your server.js file
+import recieveOrder from "./routes/recieveOrder.js";
 import analytics from "./routes/analytics.js";
 const { router: analyticsRoutes, updateDashboardAnalyticsDocument } = analytics;
 
@@ -68,7 +69,8 @@ app.get("/", (req, res) => {
 
 // --- Application Routes ---
 app.use("/api/food", foodRoutes); // Mount food-related routes
-app.use('/api/analytics', analyticsRoutes); // Mount analytics routes
+app.use('/api/analytics', analyticsRoutes);
+app.use("/api/recieve-order" , recieveOrder) // Mount analytics routes
 
 // --- Scheduled Cron Job for Analytics ---
 console.log(`Scheduling daily analytics update for timezone: ${TIMEZONE}`);
