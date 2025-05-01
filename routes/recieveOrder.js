@@ -38,8 +38,7 @@ const ADMIN_API_KEY = process.env.ADMIN_SERVER_API_KEY; // API key to authentica
 /**
  * POST /api/orders
  * Receives order data (presumably from the bot server) and saves it to the database.
- */
-router.post('/', requireApiKey, async (req, res, next) => { // Apply API key middleware if needed
+ */router.post('/',  async (req, res, next) => { // Apply API key middleware if needed
     console.log("Received request to create order:", req.body);
 
     // 1. Basic Validation (Add more specific validation as needed)
@@ -109,6 +108,7 @@ router.post('/', requireApiKey, async (req, res, next) => { // Apply API key mid
         next(error);
     }
 });
+
 
 
 
