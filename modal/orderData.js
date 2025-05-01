@@ -10,7 +10,7 @@ const orderSchema = new mongoose.Schema(
     customer_name: String, 
     delivery_type: { 
         type: String, 
-        enum: ["delivery", "pickup"], 
+        enum: ["delivery", "takeout"], 
         required: true,
         index: true 
     }, 
