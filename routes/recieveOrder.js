@@ -3,7 +3,7 @@
 
 import express from 'express';
 const router = express.Router();
-import Order from '../models/Order.js'; // Adjust path to your Order model file
+import Order from '../modal/orderData.js'; // Adjust path to your Order model file
 
 // Optional: Middleware for simple API Key Authentication
 const requireApiKey = (req, res, next) => {
