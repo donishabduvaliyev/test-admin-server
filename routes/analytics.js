@@ -3,17 +3,18 @@
 
 import { Router } from "express";
 const router = Router();
-import Order from "../modal/orderData.js"; // Use the updated Order model
-import DashboardAnalytics from "../modal/dashboardData.js"; // Use the new analytics model
+import Order from "../modal/orderData.js"; // Ensure this path is correct
+import DashboardAnalytics from "../modal/dashboardData.js"; // Ensure this path is correct
 
 // Define the timezone for date calculations (consistent with your restaurant's location)
-const TIMEZONE = "Asia/Tashkent";
+const TIMEZONE = "Asia/Tashkent"; // Make sure this is the correct Olson timezone identifier
 
 /**
  * Calculates global dashboard analytics by aggregating data from the Orders collection.
  * @returns {Promise<object|null>} The calculated analytics data or null on error.
  */
 async function calculateGlobalAnalytics() {
+    console.log("[Analytics] Starting calculateGlobalAnalytics..."); // DEBUG LOG
     try {
         const now = new Date();
 
@@ -24,66 +25,62 @@ async function calculateGlobalAnalytics() {
 
         // This Week (ISO 8601 week starts on Monday)
         const currentDayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-        const diffToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek; // Days to subtract to get to Monday
+        const diffToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
         const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diffToMonday, 0, 0, 0, 0));
-        const weekEnd = new Date(Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate() + 6, 23, 59, 59, 999)); // Monday + 6 days
+        const weekEnd = new Date(Date.UTC(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate() + 6, 23, 59, 59, 999));
 
         // This Month
         const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
-        const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999)); // Day 0 of next month = last day of current
+        const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
         // This Year
         const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1, 0, 0, 0, 0));
         const yearEnd = new Date(Date.UTC(now.getUTCFullYear(), 11, 31, 23, 59, 59, 999));
 
+        console.log("[Analytics] Time ranges defined:", { todayStart, todayEnd, weekStart, weekEnd, monthStart, monthEnd, yearStart, yearEnd }); // DEBUG LOG
+
         // --- Aggregation Pipeline using $facet ---
         const results = await Order.aggregate([
-            { // No initial $match needed, aggregate across all orders
+            {
                 $facet: {
                     // --- Today's Data ---
                     todayStats: [
                         { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
                         {
                             $group: {
-                                _id: null, // Group all today's orders
+                                _id: null,
                                 orders: { $sum: 1 },
-                                price: { $sum: "$total_price" },
+                                price: { $sum: "$total_price" }, // Ensure total_price is a Number in Order documents
                                 deliveryOrders: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, 1, 0] } },
                                 deliveryPrice: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$total_price", 0] } },
                                 deliveryDistance: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$delivery_distance", 0] } },
-                                uniqueUserIds: { $addToSet: "$user_id" } // Collect unique user IDs
+                                uniqueUserIds: { $addToSet: "$user_id" }
                             }
                         },
                         {
-                            $project: { // Reshape the output
-                                _id: 0, // Exclude the default _id
-                                orders: 1, price: 1, deliveryOrders: 1, deliveryPrice: 1, deliveryDistance: 1,
-                                users: { $size: "$uniqueUserIds" } // Count unique users
+                            $project: {
+                                _id: 0, orders: 1, price: 1, deliveryOrders: 1, deliveryPrice: 1, deliveryDistance: 1,
+                                users: { $size: "$uniqueUserIds" }
                             }
                         }
                     ],
-                    todayChart: [ // Chart data grouped by hour (using specified timezone)
+                    todayChart: [
                         { $match: { createdAt: { $gte: todayStart, $lte: todayEnd } } },
                         {
                             $group: {
-                                // Group by the hour number in the specified timezone
                                 _id: { $hour: { date: "$createdAt", timezone: TIMEZONE } },
-                                total: { $sum: "$total_price" } // Sum prices for orders in that hour
+                                total: { $sum: "$total_price" }
                             }
                         },
-                        { $sort: { "_id": 1 } }, // Sort by hour (0-23)
-                        // Format the output for the chart schema
+                        { $sort: { "_id": 1 } },
                         { $project: { _id: 0, date: { $concat: [{ $toString: "$_id" }, ":00"] }, total: 1 } }
                     ],
-
                     // --- Week's Data ---
                     weekStats: [
                         { $match: { createdAt: { $gte: weekStart, $lte: weekEnd } } },
                         {
                             $group: {
-                                _id: null,
-                                orders: { $sum: 1 },
-                                price: { $sum: "$total_price" },
+                                _id: null, orders: { $sum: 1 }, price: { $sum: "$total_price" },
                                 deliveryOrders: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, 1, 0] } },
                                 deliveryPrice: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$total_price", 0] } },
                                 deliveryDistance: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$delivery_distance", 0] } },
@@ -92,47 +89,37 @@ async function calculateGlobalAnalytics() {
                         },
                         { $project: { _id: 0, orders: 1, price: 1, deliveryOrders: 1, deliveryPrice: 1, deliveryDistance: 1, users: { $size: "$uniqueUserIds" } } }
                     ],
-                    weekChart: [ // Chart data grouped by day of week (using specified timezone)
+                    weekChart: [
                         { $match: { createdAt: { $gte: weekStart, $lte: weekEnd } } },
                         {
                             $group: {
-                                // Group by day of week number (1=Sun...7=Sat in MongoDB) in the specified timezone
                                 _id: { $dayOfWeek: { date: "$createdAt", timezone: TIMEZONE } },
-                                total: { $sum: "$total_price" } // Sum prices for orders on that day
+                                total: { $sum: "$total_price" }
                             }
                         },
-                        { $sort: { "_id": 1 } }, // Sort by day number
+                        { $sort: { "_id": 1 } },
                         {
                             $project: {
                                 _id: 0,
-                                // Map day number to abbreviation
                                 date: {
                                     $switch: {
                                         branches: [
-                                            { case: { $eq: ["$_id", 1] }, then: "Sun" },
-                                            { case: { $eq: ["$_id", 2] }, then: "Mon" },
-                                            { case: { $eq: ["$_id", 3] }, then: "Tue" },
-                                            { case: { $eq: ["$_id", 4] }, then: "Wed" },
-                                            { case: { $eq: ["$_id", 5] }, then: "Thu" },
-                                            { case: { $eq: ["$_id", 6] }, then: "Fri" },
+                                            { case: { $eq: ["$_id", 1] }, then: "Sun" }, { case: { $eq: ["$_id", 2] }, then: "Mon" },
+                                            { case: { $eq: ["$_id", 3] }, then: "Tue" }, { case: { $eq: ["$_id", 4] }, then: "Wed" },
+                                            { case: { $eq: ["$_id", 5] }, then: "Thu" }, { case: { $eq: ["$_id", 6] }, then: "Fri" },
                                             { case: { $eq: ["$_id", 7] }, then: "Sat" }
-                                        ],
-                                        default: "Unk" // Fallback
+                                        ], default: "Unk"
                                     }
-                                },
-                                total: 1
+                                }, total: 1
                             }
                         }
                     ],
-
                     // --- Month's Data ---
                     monthStats: [
                         { $match: { createdAt: { $gte: monthStart, $lte: monthEnd } } },
                         {
                             $group: {
-                                _id: null,
-                                orders: { $sum: 1 },
-                                price: { $sum: "$total_price" },
+                                _id: null, orders: { $sum: 1 }, price: { $sum: "$total_price" },
                                 deliveryOrders: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, 1, 0] } },
                                 deliveryPrice: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$total_price", 0] } },
                                 deliveryDistance: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$delivery_distance", 0] } },
@@ -141,42 +128,31 @@ async function calculateGlobalAnalytics() {
                         },
                         { $project: { _id: 0, orders: 1, price: 1, deliveryOrders: 1, deliveryPrice: 1, deliveryDistance: 1, users: { $size: "$uniqueUserIds" } } }
                     ],
-                    monthChart: [ // Chart data grouped by week of month (using specified timezone)
+                    monthChart: [
                         { $match: { createdAt: { $gte: monthStart, $lte: monthEnd } } },
                         {
                             $group: {
-                                // Group by ISO week number in the specified timezone
                                 _id: { $isoWeek: { date: "$createdAt", timezone: TIMEZONE } },
-                                total: { $sum: "$total_price" }, // Sum prices for orders in that week
-                                // Keep the first date of the week for sorting/labeling
+                                total: { $sum: "$total_price" },
                                 weekStartDate: { $min: "$createdAt" }
                             }
                         },
-                        { $sort: { "weekStartDate": 1 } }, // Sort by the actual start date of the week
-                        // Calculate relative week number within the month
-                        {
-                            $set: {
-                                monthStartWeek: { $isoWeek: { date: monthStart, timezone: TIMEZONE } }
-                            }
-                        },
+                        { $sort: { "weekStartDate": 1 } },
+                        { $set: { monthStartWeek: { $isoWeek: { date: monthStart, timezone: TIMEZONE } } } },
                         {
                             $project: {
                                 _id: 0,
-                                // Calculate week number relative to the start of the month
                                 date: { $concat: ["Week ", { $toString: { $add: [{ $subtract: ["$_id", "$monthStartWeek"] }, 1] } }] },
                                 total: 1
                             }
                         }
                     ],
-
                     // --- Year's Data ---
                     yearStats: [
                         { $match: { createdAt: { $gte: yearStart, $lte: yearEnd } } },
                         {
                             $group: {
-                                _id: null,
-                                orders: { $sum: 1 },
-                                price: { $sum: "$total_price" },
+                                _id: null, orders: { $sum: 1 }, price: { $sum: "$total_price" },
                                 deliveryOrders: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, 1, 0] } },
                                 deliveryPrice: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$total_price", 0] } },
                                 deliveryDistance: { $sum: { $cond: [{ $eq: ["$delivery_type", "delivery"] }, "$delivery_distance", 0] } },
@@ -185,20 +161,18 @@ async function calculateGlobalAnalytics() {
                         },
                         { $project: { _id: 0, orders: 1, price: 1, deliveryOrders: 1, deliveryPrice: 1, deliveryDistance: 1, users: { $size: "$uniqueUserIds" } } }
                     ],
-                    yearChart: [ // Chart data grouped by month (using specified timezone)
+                    yearChart: [
                         { $match: { createdAt: { $gte: yearStart, $lte: yearEnd } } },
                         {
                             $group: {
-                                // Group by month number (1-12) in the specified timezone
                                 _id: { $month: { date: "$createdAt", timezone: TIMEZONE } },
-                                total: { $sum: "$total_price" } // Sum prices for orders in that month
+                                total: { $sum: "$total_price" }
                             }
                         },
-                        { $sort: { "_id": 1 } }, // Sort by month number
+                        { $sort: { "_id": 1 } },
                         {
                             $project: {
                                 _id: 0,
-                                // Map month number to abbreviation
                                 date: {
                                     $switch: {
                                         branches: [
@@ -208,11 +182,9 @@ async function calculateGlobalAnalytics() {
                                             { case: { $eq: ["$_id", 7] }, then: "Jul" }, { case: { $eq: ["$_id", 8] }, then: "Aug" },
                                             { case: { $eq: ["$_id", 9] }, then: "Sep" }, { case: { $eq: ["$_id", 10] }, then: "Oct" },
                                             { case: { $eq: ["$_id", 11] }, then: "Nov" }, { case: { $eq: ["$_id", 12] }, then: "Dec" }
-                                        ],
-                                        default: "Unk"
+                                        ], default: "Unk"
                                     }
-                                },
-                                total: 1
+                                }, total: 1
                             }
                         }
                     ]
@@ -220,21 +192,37 @@ async function calculateGlobalAnalytics() {
             }
         ]);
 
-        // --- Format the results into the DashboardAnalytics schema structure ---
-        // $facet returns an array. Access the first element results[0].
-        // If a facet has no matching documents, its array will be empty. Use || {} or || [] as fallback.
+        console.log("[Analytics] Raw aggregation results:", JSON.stringify(results, null, 2)); // DEBUG LOG
+
+        if (!results || results.length === 0 || !results[0]) { // Added check for results[0]
+            console.error("[Analytics] Aggregation returned no results, empty array, or results[0] is undefined.");
+            return null;
+        }
+
+        // Ensure all facet outputs exist, even if empty, to prevent access errors
+        const todayStats = results[0].todayStats && results[0].todayStats.length > 0 ? results[0].todayStats[0] : {};
+        const todayChart = results[0].todayChart || [];
+        const weekStats = results[0].weekStats && results[0].weekStats.length > 0 ? results[0].weekStats[0] : {};
+        const weekChart = results[0].weekChart || [];
+        const monthStats = results[0].monthStats && results[0].monthStats.length > 0 ? results[0].monthStats[0] : {};
+        const monthChart = results[0].monthChart || [];
+        const yearStats = results[0].yearStats && results[0].yearStats.length > 0 ? results[0].yearStats[0] : {};
+        const yearChart = results[0].yearChart || [];
+
+
         const analyticsData = {
-            today: { ...(results[0].todayStats[0] || {}), chart: results[0].todayChart || [] },
-            week: { ...(results[0].weekStats[0] || {}), chart: results[0].weekChart || [] },
-            month: { ...(results[0].monthStats[0] || {}), chart: results[0].monthChart || [] },
-            year: { ...(results[0].yearStats[0] || {}), chart: results[0].yearChart || [] }
+            today: { ...todayStats, chart: todayChart },
+            week: { ...weekStats, chart: weekChart },
+            month: { ...monthStats, chart: monthChart },
+            year: { ...yearStats, chart: yearChart }
         };
 
+        console.log("[Analytics] Formatted analyticsData to be returned:", JSON.stringify(analyticsData, null, 2)); // DEBUG LOG
         return analyticsData;
 
     } catch (error) {
-        console.error("Error calculating global analytics:", error);
-        return null; // Indicate failure
+        console.error("[Analytics] CRITICAL Error in calculateGlobalAnalytics:", error); // Modified Log for emphasis
+        return null;
     }
 }
 
@@ -242,29 +230,36 @@ async function calculateGlobalAnalytics() {
  * Updates the single global dashboard analytics document in the database.
  */
 async function updateDashboardAnalyticsDocument() {
-    console.log(`[${new Date().toISOString()}] Attempting to update global dashboard analytics...`);
+    console.log(`[Analytics Update] Attempting to update global dashboard analytics at ${new Date().toISOString()}...`); // DEBUG LOG
     const calculatedData = await calculateGlobalAnalytics();
 
     if (!calculatedData) {
-        console.error("Analytics calculation failed. Update aborted.");
-        return false; // Indicate failure
+        console.error("[Analytics Update] Analytics calculation returned null. Update aborted."); // DEBUG LOG
+        return false;
     }
+    console.log("[Analytics Update] Successfully calculated data. Proceeding to save."); // DEBUG LOG
+    // console.log("[Analytics Update] Data to be saved:", JSON.stringify(calculatedData, null, 2)); // Already logged in calculateGlobalAnalytics
 
     try {
         const updatedDoc = await DashboardAnalytics.findOneAndUpdate(
-            { identifier: 'main_dashboard' }, // Find the document by its unique identifier
-            { $set: calculatedData }, // Set the fields to the newly calculated data
+            { identifier: 'main_dashboard' },
+            { $set: calculatedData },
             {
-                upsert: true, // Create the document if it doesn't exist
-                new: true, // Return the modified document
-                runValidators: true // Ensure the update respects schema validation
+                upsert: true,
+                new: true,
+                runValidators: true
             }
         );
-        console.log(`Global dashboard analytics updated successfully at: ${updatedDoc.updatedAt}`);
-        return true; // Indicate success
+        // Check if updatedDoc is null, which can happen if findOneAndUpdate fails silently with some configurations (though less likely with upsert:true)
+        if (!updatedDoc) {
+            console.error("[Analytics Update] findOneAndUpdate returned null or undefined, even with upsert. This is unexpected.");
+            return false;
+        }
+        console.log(`[Analytics Update] Global dashboard analytics updated successfully. Document ID: ${updatedDoc._id}, Updated At: ${updatedDoc.updatedAt}`); // DEBUG LOG
+        return true;
     } catch (error) {
-        console.error("Error updating dashboard analytics document:", error);
-        return false; // Indicate failure
+        console.error("[Analytics Update] CRITICAL Error updating dashboard analytics document in DB:", error); // Modified Log for emphasis
+        return false;
     }
 }
 
@@ -272,43 +267,45 @@ async function updateDashboardAnalyticsDocument() {
 // --- API Routes ---
 
 /**
- * POST /api/analytics/update
+ * POST /api/analytics/updateAnalytics (Corrected route name from /update to /updateAnalytics to match common practice)
  * Manually triggers the update of the global dashboard analytics document.
  */
 router.post("/updateAnalytics", async (req, res, next) => {
+    console.log(`[API Call] Received POST request to /api/analytics/updateAnalytics at ${new Date().toISOString()}`); // DEBUG LOG
     try {
-        const success = await updateDashboardAnalyticsDocument(); // Call the update function
+        const success = await updateDashboardAnalyticsDocument();
         if (success) {
+            console.log("[API Call] /api/analytics/updateAnalytics finished successfully."); // DEBUG LOG
             res.status(200).json({ message: 'Global dashboard analytics update process finished successfully.' });
         } else {
+            console.error("[API Call] /api/analytics/updateAnalytics failed during calculation or saving."); // DEBUG LOG
             res.status(500).json({ message: 'Global dashboard analytics update process failed during calculation or saving.' });
         }
     } catch (error) {
-        // Catch unexpected errors during the request handling itself
-        console.error("Error in /api/analytics/update route:", error);
-        next(error); // Pass to global error handler
+        console.error("[API Call] Unexpected error in /api/analytics/updateAnalytics route:", error); // DEBUG LOG
+        next(error);
     }
 });
 
 /**
- * GET /api/analytics/dashboard
+ * GET /api/analytics/dashboardAnalytics (Corrected route name for clarity)
  * Retrieves the latest global dashboard analytics data.
  */
-router.get("/dashboardAnalytics", async (req, res, next) => {
+router.get("/dashboardAnalytics", async (req, res, next) => { // Renamed for clarity
+    console.log(`[API Call] Received GET request to /api/analytics/dashboardAnalytics at ${new Date().toISOString()}`); // DEBUG LOG
     try {
-        // Find the single document using the fixed identifier
         const analytics = await DashboardAnalytics.findOne({ identifier: 'main_dashboard' });
 
         if (!analytics) {
-            // If not found, it might not have been created/updated yet
+            console.log("[API Call] /api/analytics/dashboardAnalytics - Analytics data not found."); // DEBUG LOG
             return res.status(404).json({ message: 'Global analytics data not found. Run the update process first.' });
         }
-        // Send the found document
+        console.log("[API Call] /api/analytics/dashboardAnalytics - Analytics data retrieved successfully."); // DEBUG LOG
         res.status(200).json(analytics);
     } catch (err) {
-        console.error("Error fetching global dashboard data:", err);
-        next(err); // Pass to global error handler
+        console.error("[API Call] Error fetching global dashboard data in /api/analytics/dashboardAnalytics:", err); // DEBUG LOG
+        next(err);
     }
 });
 
-export default { router, updateDashboardAnalyticsDocument }; // Export router and the update function for cron
+export default { router, updateDashboardAnalyticsDocument };
