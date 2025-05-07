@@ -83,7 +83,7 @@ router.post("/add", async (req, res) => {
       price,
       category,
       image,
-      isAvailable: isAvailable === true, // Ensure Boolean
+      isAvailable: isAvailable , 
       sizes: Array.isArray(sizes) ? sizes : [],
       toppings: Array.isArray(toppings) ? toppings : [],
     };
